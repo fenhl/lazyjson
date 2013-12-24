@@ -1,5 +1,7 @@
 **lazyjson** is a Python 3 module providing lazy JSON I/O.
 
+This is `lazyjson` version 0.1.0 ([semver](http://semver.org/)).
+
 Usage
 =====
 
