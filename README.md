@@ -1,6 +1,8 @@
 **lazyjson** is a Python 3 module providing lazy JSON I/O.
 
-This is `lazyjson` version 0.1.0 ([semver](http://semver.org/)).
+This is `lazyjson` version 1.0.0 ([semver](http://semver.org/)).
+
+The versioned API is simple: when instantiating a `File`, the single argument must be a valid single argument to the built-in function [`open`](http://docs.python.org/3/library/functions.html#open). The object can then be used like a dict object. All data is lazily read from, and immediately written to the file using `open` on each call.
 
 Usage
 =====
