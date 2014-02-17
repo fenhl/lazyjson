@@ -2,7 +2,7 @@ import collections.abc
 import json
 import threading
 
-__version__ = '1.0.0'
+__version__ = '1.0.1'
 
 class Node:
     def __deepcopy__(self, memodict={}):
@@ -105,6 +105,7 @@ class File(Dict):
         with self.lock:
             with open(self.file_info, 'w') as json_file:
                 json.dump(value, json_file, sort_keys=True, indent=4, separators=(',', ': '))
+                print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
     
     def set_value_at_key_path(self, key_path, value):
         with open(self.file_info) as json_file:
