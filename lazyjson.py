@@ -36,7 +36,7 @@ class Dict(Node, collections.abc.MutableMapping):
             return self.value()[key]
     
     def __iter__(self):
-        for key in self.value()
+        for key in self.value():
             yield key
     
     def __len__(self):
