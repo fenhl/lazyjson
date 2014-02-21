@@ -1,4 +1,7 @@
-import collections.abc
+try:
+    import collections.abc as collectionsabc
+except ImportError:
+    import collections as collectionsabc
 import json
 import threading
 
@@ -23,7 +26,7 @@ class Node:
     def value(self):
         return self.root.value_at_key_path(self.key_path)
 
-class Dict(Node, collections.abc.MutableMapping):
+class Dict(Node, collectionsabc.MutableMapping):
     def __delitem__(self, key):
         self.root.delete_value_at_key_path(self.key_path + [key])
     
@@ -47,7 +50,7 @@ class Dict(Node, collections.abc.MutableMapping):
             value = value.value()
         self.root.set_value_at_key_path(self.key_path + [key], value)
 
-class List(Node, collections.abc.MutableSequence):
+class List(Node, collectionsabc.MutableSequence):
     def __delitem__(self, key):
         self.root.delete_value_at_key_path(self.key_path + [key])
     
