@@ -5,7 +5,7 @@ except ImportError:
 import json
 import threading
 
-__version__ = '1.0.1'
+__version__ = '1.0.2'
 
 class Node:
     def __deepcopy__(self, memodict={}):
