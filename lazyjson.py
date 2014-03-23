@@ -7,6 +7,19 @@ import threading
 
 __version__ = '1.0.2'
 
+try:
+    import pathlib
+except ImportError:
+    pass
+else:
+    import builtins
+    
+    def open(file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None):
+        if isinstance(file, pathlib.Path):
+            return file.open(mode=mode, buffering=buffering, encoding=encoding, errors=errors, newline=newline)
+        else:
+            return builtins.open(file, mode=mode, buffering=buffering, encoding=encoding, errors=errors, newline=newline, closefd=closefd, opener=opener)
+
 class Node:
     def __deepcopy__(self, memodict={}):
         return self.value()
