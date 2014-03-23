@@ -5,7 +5,7 @@ except ImportError:
 import json
 import threading
 
-__version__ = '1.0.2'
+__version__ = '1.1.0'
 
 try:
     import pathlib
