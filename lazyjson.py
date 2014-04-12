@@ -2,18 +2,18 @@ try:
     import collections.abc as collectionsabc
 except ImportError:
     import collections as collectionsabc
+import io
 import json
 import threading
 
 __version__ = '1.1.0'
 
 try:
+    import builtins
     import pathlib
 except ImportError:
     pass
 else:
-    import builtins
-    
     def open(file, mode='r', buffering=-1, encoding=None, errors=None, newline=None, closefd=True, opener=None):
         if isinstance(file, pathlib.Path):
             return file.open(mode=mode, buffering=buffering, encoding=encoding, errors=errors, newline=newline)
@@ -87,14 +87,18 @@ class List(Node, collectionsabc.MutableSequence):
         self.root.insert_value_at_key_path(self.key_path + [index], value)
 
 class File(Dict):
-    def __init__(self, file_info):
+    def __init__(self, file_info, file_is_open=None):
+        self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else file_is_open
         self.file_info = file_info
         self.lock = threading.Lock()
         super().__init__(self)
     
     def delete_value_at_key_path(self, key_path):
-        with open(self.file_info) as json_file:
-            json_dict = json.load(json_file)
+        if self.file_is_open:
+            json_dict = json.load(self.file_info)
+        else:
+            with open(self.file_info) as json_file:
+                json_dict = json.load(json_file)
         item = json_dict
         if len(key_path) == 0:
             json_dict = {}
@@ -105,8 +109,11 @@ class File(Dict):
         self.set(json_dict)
     
     def insert_value_at_key_path(self, key_path, value):
-        with open(self.file_info) as json_file:
-            json_dict = json.load(json_file)
+        if self.file_is_open:
+            json_dict = json.load(self.file_info)
+        else:
+            with open(self.file_info) as json_file:
+                json_dict = json.load(json_file)
         item = json_dict
         if len(key_path) == 0:
             json_dict = value
@@ -120,13 +127,20 @@ class File(Dict):
         if isinstance(value, Node):
             value = value.value()
         with self.lock:
-            with open(self.file_info, 'w') as json_file:
-                json.dump(value, json_file, sort_keys=True, indent=4, separators=(',', ': '))
-                print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
+            if self.file_is_open:
+                json.dump(value, self.file_info, sort_keys=True, indent=4, separators=(',', ': '))
+                print(file=self.file_info) # json.dump doesn't end the file in a newline, so add it manually
+            else:
+                with open(self.file_info, 'w') as json_file:
+                    json.dump(value, json_file, sort_keys=True, indent=4, separators=(',', ': '))
+                    print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
     
     def set_value_at_key_path(self, key_path, value):
-        with open(self.file_info) as json_file:
-            json_dict = json.load(json_file)
+        if self.file_is_open:
+            json_dict = json.load(self.file_info)
+        else:
+            with open(self.file_info) as json_file:
+                json_dict = json.load(json_file)
         item = json_dict
         if len(key_path) == 0:
             json_dict = value
@@ -137,8 +151,11 @@ class File(Dict):
         self.set(json_dict)
     
     def value_at_key_path(self, key_path):
-        with open(self.file_info) as json_file:
-            ret = json.load(json_file)
+        if self.file_is_open:
+            ret = json.load(self.file_info)
+        else:
+            with open(self.file_info) as json_file:
+                ret = json.load(json_file)
         for key in key_path:
             ret = ret[key]
         return ret
