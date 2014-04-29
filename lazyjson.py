@@ -126,6 +126,7 @@ class File(Dict):
     def set(self, value):
         if isinstance(value, Node):
             value = value.value()
+        json.dumps(value) # try writing the value to a string first to prevent corrupting the file if the value is not JSON serializable
         with self.lock:
             if self.file_is_open:
                 json.dump(value, self.file_info, sort_keys=True, indent=4, separators=(',', ': '))
