@@ -1,3 +1,4 @@
+import abc
 try:
     import collections.abc as collectionsabc
 except ImportError:
@@ -20,143 +21,129 @@ else:
         else:
             return builtins.open(file, mode=mode, buffering=buffering, encoding=encoding, errors=errors, newline=newline, closefd=closefd, opener=opener)
 
-class Node:
+class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
+    def __contains__(self, item):
+        if isinstance(item, Node):
+            item = item.value()
+        return item in self.value()
+    
     def __deepcopy__(self, memodict={}):
         return self.value()
     
+    def __delitem__(self, key):
+        self.root.delete_value_at_key_path(self.key_path + [key])
+    
+    def __getitem__(self, key):
+        return Node(self.root, self.key_path + [key])
+    
     def __init__(self, root, key_path=None):
-        if not isinstance(root, File):
+        if not isinstance(root, BaseFile):
             root = File(root)
         self.root = root
-        self.key_path = [] if key_path is None else key_path[:]    
+        self.key_path = [] if key_path is None else key_path[:]
+    
+    def __iter__(self):
+        return self.value().__iter__()
+    
+    def __len__(self):
+        return len(self.value())
     
     def __str__(self):
         return str(self.value())
     
     def __repr__(self):
-        return 'lazyjson.Node(' + repr(self.root.file_info) + ', ' + repr(self.key_path) + ')'
+        return 'lazyjson.Node(' + repr(self.root) + ', ' + repr(self.key_path) + ')'
+    
+    def __setitem__(self, key, value):
+        if isinstance(value, Node):
+            value = value.value()
+        self.root.set_value_at_key_path(self.key_path + [key], value)
+    
+    def insert(self, key, value):
+        self.root.insert_value_at_key_path(self.key_path + [key], value)
     
     def value(self):
         return self.root.value_at_key_path(self.key_path)
 
-class Dict(Node, collectionsabc.MutableMapping):
-    def __delitem__(self, key):
-        self.root.delete_value_at_key_path(self.key_path + [key])
-    
-    def __getitem__(self, key):
-        if isinstance(self.value()[key], dict):
-            return Dict(self.root, self.key_path + [key])
-        elif isinstance(self.value()[key], list):
-            return List(self.root, self.key_path + [key])
-        else:
-            return self.value()[key]
-    
-    def __iter__(self):
-        for key in self.value():
-            yield key
-    
-    def __len__(self):
-        return len(self.value())
-    
-    def __setitem__(self, key, value):
-        if isinstance(value, Node):
-            value = value.value()
-        self.root.set_value_at_key_path(self.key_path + [key], value)
-
-class List(Node, collectionsabc.MutableSequence):
-    def __delitem__(self, key):
-        self.root.delete_value_at_key_path(self.key_path + [key])
-    
-    def __getitem__(self, key):
-        if isinstance(self.value()[key], dict):
-            return Dict(self.root, self.key_path + [key])
-        elif isinstance(self.value()[key], list):
-            return List(self.root, self.key_path + [key])
-        else:
-            return self.value()[key]
-    
-    def __len__(self):
-        return len(self.value())
-    
-    def __setitem__(self, key, value):
-        if isinstance(value, Node):
-            value = value.value()
-        self.root.set_value_at_key_path(self.key_path + [key], value)
-    
-    def insert(self, index, value):
-        self.root.insert_value_at_key_path(self.key_path + [index], value)
-
-class File(Dict):
-    def __init__(self, file_info, file_is_open=None):
-        self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else file_is_open
-        self.file_info = file_info
-        self.lock = threading.Lock()
+class BaseFile(Node, metaclass=abc.ABCMeta):
+    """ABC for lazyjson files (root values)."""
+    def __init__(self):
         super().__init__(self)
     
     def delete_value_at_key_path(self, key_path):
-        if self.file_is_open:
-            json_dict = json.load(self.file_info)
-        else:
-            with open(self.file_info) as json_file:
-                json_dict = json.load(json_file)
-        item = json_dict
+        json_value = self.value()
+        item = json_value
         if len(key_path) == 0:
-            json_dict = {}
+            json_value = None
         else:
             for key in key_path[:-1]:
                 item = item[key]
             del item[key_path[-1]]
-        self.set(json_dict)
+        self.set(json_value)
     
     def insert_value_at_key_path(self, key_path, value):
-        if self.file_is_open:
-            json_dict = json.load(self.file_info)
-        else:
-            with open(self.file_info) as json_file:
-                json_dict = json.load(json_file)
+        json_value = self.value()
         item = json_dict
         if len(key_path) == 0:
-            json_dict = value
+            json_value = value
         else:
             for key in key_path[:-1]:
                 item = item[key]
             item.insert(key_path[-1], value)
-        self.set(json_dict)
+        self.set(json_value)
     
-    def set(self, value):
-        if isinstance(value, Node):
-            value = value.value()
-        json.dumps(value) # try writing the value to a string first to prevent corrupting the file if the value is not JSON serializable
-        with self.lock:
-            if self.file_is_open:
-                json.dump(value, self.file_info, sort_keys=True, indent=4, separators=(',', ': '))
-                print(file=self.file_info) # json.dump doesn't end the file in a newline, so add it manually
-            else:
-                with open(self.file_info, 'w') as json_file:
-                    json.dump(value, json_file, sort_keys=True, indent=4, separators=(',', ': '))
-                    print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
+    @abc.abstractmethod
+    def set(self, new_value):
+        pass
     
-    def set_value_at_key_path(self, key_path, value):
-        if self.file_is_open:
-            json_dict = json.load(self.file_info)
-        else:
-            with open(self.file_info) as json_file:
-                json_dict = json.load(json_file)
-        item = json_dict
+    def set_value_at_key_path(self, key_path, new_value):
+        json_value = self.value()
+        item = json_value
         if len(key_path) == 0:
-            json_dict = value
+            json_value = new_value
         else:
             for key in key_path[:-1]:
                 item = item[key]
-            item[key_path[-1]] = value
-        self.set(json_dict)
+            item[key_path[-1]] = new_value
+        self.set(json_value)
+    
+    @abc.abstractmethod
+    def value(self, new_value):
+        pass
     
     def value_at_key_path(self, key_path):
-        if self.file_is_open:
-            ret = json.load(self.file_info)
-        else:
-            with open(self.file_info) as json_file:
-                ret = json.load(json_file)
+        ret = self.value()
         for key in key_path:
             ret = ret[key]
         return ret
+
+class File(BaseFile):
+    """A file based on a file-like object, a pathlib.Path, or anything that can be opened."""
+    def __init__(self, file_info, file_is_open=None):
+        super().__init__()
+        self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else bool(file_is_open)
+        self.file_info = file_info
+        self.lock = threading.Lock()
+    
+    def __repr__(self):
+        return 'lazyjson.File(' + repr(self.file_info) + ('' if self.file_is_open and isinstance(self.file_info, io.IOBase) or (not self.file_is_open) and not isinstance(self.file_info, io.IOBase) else ', file_is_open=' + repr(self.file_is_open)) + ')'
+    
+    def set(self, new_value):
+        if isinstance(new_value, Node):
+            value = value.value()
+        json.dumps(new_value) # try writing the value to a string first to prevent corrupting the file if the value is not JSON serializable
+        with self.lock:
+            if self.file_is_open:
+                json.dump(new_value, self.file_info, sort_keys=True, indent=4, separators=(',', ': '))
+                print(file=self.file_info) # json.dump doesn't end the file in a newline, so add it manually
+            else:
+                with open(self.file_info, 'w') as json_file:
+                    json.dump(new_value, json_file, sort_keys=True, indent=4, separators=(',', ': '))
+                    print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
+    
+    def value(self):
+        if self.file_is_open:
+            return json.load(self.file_info)
+        else:
+            with open(self.file_info) as json_file:
+                return json.load(json_file)
