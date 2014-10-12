@@ -40,6 +40,7 @@ The result has magically changed, because the file is actually read each time yo
 >>> f['someKey'] += ['e', 'f']
 >>> with open('example-file.json') as text_file:
 ...     print(text_file.read())
+... 
 {
     "someKey": [
         "a",
