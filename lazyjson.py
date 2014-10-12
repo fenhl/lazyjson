@@ -147,3 +147,31 @@ class File(BaseFile):
         else:
             with open(self.file_info) as json_file:
                 return json.load(json_file)
+
+class SFTPFile(BaseFile):
+    def __init__(self, host, port, path, **kwargs):
+        super().__init__()
+        self.hostname = host
+        self.port = port
+        self.remote_path = path
+        self.connection_args = kwargs
+    
+    def __repr__(self):
+        return 'lazyjson.SFTPFile(' + repr(self.hostname) + ', ' + repr(self.port) + ', ' + repr(self.remote_path) + ''.join(', {}={}'.format(k, repr(v)) for k, v in self.connection_args.items()) + ')'
+    
+    def set(self, new_value):
+        import paramiko
+        
+        with paramiko.Transport((self.hostname, self.port)) as transport:
+            transport.connect(**self.connection_args)
+            with transport.open_sftp_client().file(self.remote_path, 'w') as sftp_file:
+                json_string = json.dumps(new_value, sort_keys=True, indent=4, separators=(',', ': '))
+                sftp_file.write(json_string.encode('utf-8') + b'\n')
+    
+    def value(self):
+        import paramiko
+        
+        with paramiko.Transport((self.hostname, self.port)) as transport:
+            transport.connect(**self.connection_args)
+            with transport.open_sftp_client().file(self.remote_path) as sftp_file:
+                return json.loads(sftp_file.read().decode('utf-8'))
