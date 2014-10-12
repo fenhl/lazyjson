@@ -83,7 +83,7 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
     
     def insert_value_at_key_path(self, key_path, value):
         json_value = self.value()
-        item = json_dict
+        item = json_value
         if len(key_path) == 0:
             json_value = value
         else:
@@ -147,6 +147,22 @@ class File(BaseFile):
         else:
             with open(self.file_info) as json_file:
                 return json.load(json_file)
+
+class PythonFile(BaseFile):
+    """A file based on a Python object. Can be used with MultiFile to provide fallback values."""
+    def __init__(self, value=None):
+        super().__init__()
+        self._value = value
+    
+    def __repr__(self):
+        return 'lazyjson.PythonFile(' + repr(self._value) + ')'
+    
+    def set(self, new_value):
+        json.dumps(new_value) # try writing the value to a string first to make sure it is JSON serializable
+        self._value = new_value
+    
+    def value(self):
+        return self._value
 
 class SFTPFile(BaseFile):
     def __init__(self, host, port, path, **kwargs):
