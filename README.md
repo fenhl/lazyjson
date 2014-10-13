@@ -104,7 +104,7 @@ This class makes a lazyjson file out of a native Python object, as defined by th
 SFTPFile
 --------
 
-The `SFTPFile` class uses [paramiko](https://github.com/paramiko/paramiko) to represent a JSON file accessed via SFTP (FTP over SSH).
+The `SFTPFile` class uses [paramiko](https://github.com/paramiko/paramiko) to represent a JSON file accessed via [SFTP](https://en.wikipedia.org/wiki/SSH_File_Transfer_Protocol).
 
 The constructor takes the following required positional-only arguments:
 
