@@ -83,6 +83,24 @@ When instantiating a `File`, the single argument must be one of the following:
 
 Note that constructing a `File` from a file object may result in unexpected behavior, as lazyjson uses `.read` on the file every time a value is accessed, and `.write` every time one is changed. The file object must also support [`str`](https://docs.python.org/3/library/stdtypes.html#str) input for changes to succeed.
 
+MultiFile
+---------
+
+A `MultiFile` represents a stack of JSON files, with values higher up on the stack extending or overwriting those below them.
+
+The constructor takes a variable number of positional arguments, which should all be instances of `BaseFile` subclasses. These will become the file stack, listed from top to bottom.
+
+When reading a `MultiFile`, a single file representation is created by recursively merging/overriding the values in the file stack. Two objects are merged into one, and all other types of JSON values, as well as an object and a different value, overwrite each other.
+
+When writing to a `MultiFile`, only the topmost file is ever modified. It will be modified in such a way that using the reading algorithm on the multifile will have the intended effect. The only exception is deleting pairs from a JSON object, which is undefined behavior.
+
+**Note:** the exact writing behavior of `MultiFile` is undefined and may change at any point without requiring a major release.
+
+PythonFile
+----------
+
+This class makes a lazyjson file out of a native Python object, as defined by the `json` module. It can be used in a `MultiFile` to provide a fallback value.
+
 SFTPFile
 --------
 
