@@ -148,6 +148,37 @@ class File(BaseFile):
             with open(self.file_info) as json_file:
                 return json.load(json_file)
 
+class MultiFile(BaseFile):
+    def __init__(self, *args):
+        super().__init__()
+        self.files = [arg if isinstance(arg, BaseFile) else File(arg) for arg in args]
+    
+    def __repr__(self):
+        return 'lazyjson.MultiFile(' + ', '.join(repr(f) for f in self.files) + ')'
+    
+    @staticmethod
+    def json_recursive_merge(json_values):
+        try:
+            first = next(json_values)
+        except StopIteration:
+            return None
+        if isinstance(first, dict):
+            objects_prefix = [first]
+            for value in json_values:
+                if isinstance(value, dict):
+                    objects_prefix.append(value)
+                else:
+                    break
+            return {k: MultiFile.json_recursive_merge(value[k] for value in objects_prefix if isinstance(value, dict) and k in value) for k in set.union(*(set(d.keys()) for d in objects_prefix))}
+        else:
+            return first
+    
+    def set(self, new_value):
+        self.files[0].set(new_value)
+    
+    def value(self):
+        return self.json_recursive_merge(f.value() for f in self.files)
+
 class PythonFile(BaseFile):
     """A file based on a Python object. Can be used with MultiFile to provide fallback values."""
     def __init__(self, value=None):
