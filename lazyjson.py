@@ -5,6 +5,9 @@ except ImportError:
     import collections as collectionsabc
 import io
 import json
+import os
+import os.path
+import subprocess
 import threading
 
 def parse_version_string():
