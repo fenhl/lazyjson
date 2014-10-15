@@ -67,7 +67,7 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
         self.key_path = [] if key_path is None else key_path[:]
     
     def __iter__(self):
-        return self.value().__iter__()
+        return iter(self.value())
     
     def __len__(self):
         return len(self.value())
@@ -82,6 +82,15 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
         if isinstance(value, Node):
             value = value.value()
         self.root.set_value_at_key_path(self.key_path + [key], value)
+    
+    def get(self, key, default=None):
+        try:
+            return self[key].value()
+        except:
+            if isinstance(default, Node):
+                return default.value()
+            else:
+                return default
     
     def insert(self, key, value):
         self.root.insert_value_at_key_path(self.key_path + [key], value)
