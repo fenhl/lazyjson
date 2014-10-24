@@ -143,8 +143,9 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
 
 class File(BaseFile):
     """A file based on a file-like object, a pathlib.Path, or anything that can be opened."""
-    def __init__(self, file_info, file_is_open=None):
+    def __init__(self, file_info, file_is_open=None, encoding="ansi"):
         super().__init__()
+        self.encoding = encoding
         self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else bool(file_is_open)
         self.file_info = file_info
         self.lock = threading.Lock()
@@ -169,7 +170,7 @@ class File(BaseFile):
         if self.file_is_open:
             return json.load(self.file_info)
         else:
-            with open(self.file_info) as json_file:
+            with open(self.file_info, encoding=self.encoding) as json_file:
                 return json.load(json_file)
 
 class MultiFile(BaseFile):
