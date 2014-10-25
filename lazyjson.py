@@ -9,6 +9,7 @@ import os
 import os.path
 import subprocess
 import threading
+import locale
 
 def parse_version_string():
     path = os.path.abspath(__file__)
@@ -143,7 +144,7 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
 
 class File(BaseFile):
     """A file based on a file-like object, a pathlib.Path, or anything that can be opened."""
-    def __init__(self, file_info, file_is_open=None, encoding="ansi"):
+    def __init__(self, file_info, file_is_open=None, encoding = locale.getpreferredencoding()):
         super().__init__()
         self.encoding = encoding
         self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else bool(file_is_open)
