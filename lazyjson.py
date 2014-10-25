@@ -148,7 +148,7 @@ class File(BaseFile):
         super().__init__()
         self.openargs = {}
         for key in kwargs:
-            if key in ("buffering", "mode", "errors", "newline", "closefd", "opener"):
+            if key in ("buffering", "errors", "newline", "closefd", "opener"):
                 self.openargs[key] = kwargs[key]
         self.encoding = encoding
         self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else bool(file_is_open)
