@@ -75,11 +75,13 @@ It also has an `__init__` method that takes no arguments and must be called from
 File
 ----
 
-When instantiating a `File`, the single argument must be one of the following:
+When instantiating a `File`, the first constructor argument must be one of the following:
 
 *   a valid single argument to the built-in function [`open`](http://docs.python.org/3/library/functions.html#open),
 *   an open [file object](https://docs.python.org/3/glossary.html#term-file-object),
 *   or an [instance](http://docs.python.org/3/library/functions.html#isinstance) of [`pathlib.Path`](http://docs.python.org/3/library/pathlib.html#pathlib.Path).
+
+The optional `file_is_open` argument can be used to force appropriate behavior for a file that is already open, or one that will be opened on each read or write access. By default, behavior depends on whether the file argument inherits from `io.IOBase`. Any other keyword arguments, such as `encoding`, will be passed to the `open` calls.
 
 Note that constructing a `File` from a file object may result in unexpected behavior, as lazyjson uses `.read` on the file every time a value is accessed, and `.write` every time one is changed. The file object must also support [`str`](https://docs.python.org/3/library/stdtypes.html#str) input for changes to succeed.
 
