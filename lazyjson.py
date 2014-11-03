@@ -159,13 +159,9 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
 
 class File(BaseFile):
     """A file based on a file-like object, a pathlib.Path, or anything that can be opened."""
-    def __init__(self, file_info, file_is_open=None, encoding = locale.getpreferredencoding(), **kwargs):
+    def __init__(self, file_info, file_is_open=None, **kwargs):
         super().__init__()
-        self.openargs = {}
-        for key in kwargs:
-            if key in ("buffering", "errors", "newline", "closefd", "opener"):
-                self.openargs[key] = kwargs[key]
-        self.encoding = encoding
+        self.open_args = dict(kwargs)
         self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else bool(file_is_open)
         self.file_info = file_info
         self.lock = threading.Lock()
@@ -182,7 +178,7 @@ class File(BaseFile):
                 json.dump(new_value, self.file_info, sort_keys=True, indent=4, separators=(',', ': '))
                 print(file=self.file_info) # json.dump doesn't end the file in a newline, so add it manually
             else:
-                with open(self.file_info, 'w', encoding=self.encoding, **self.openargs) as json_file:
+                with open(self.file_info, 'w', **self.open_args) as json_file:
                     json.dump(new_value, json_file, sort_keys=True, indent=4, separators=(',', ': '))
                     print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
     
@@ -190,7 +186,7 @@ class File(BaseFile):
         if self.file_is_open:
             return json.load(self.file_info)
         else:
-            with open(self.file_info, encoding=self.encoding, **self.openargs) as json_file:
+            with open(self.file_info, **self.open_args) as json_file:
                 return json.load(json_file)
 
 class MultiFile(BaseFile):
