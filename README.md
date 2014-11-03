@@ -127,5 +127,6 @@ Under the hood, the `Node` object only holds a reference to its file (`BaseFile`
 
 Some methods to note:
 
+*   `__iter__` takes a snapshot of the keys/indices at the time of being called, and always yields nodes: for object nodes, it behaves similar to the `values` method.
 *   `get` is overridden to always return a native Python object. It returns the value at the specified key, index, or slice if it exists, or the default value provided otherwise.
 *   `value` returns the JSON value of the node as a native Python object, similar to [`json.load`](https://docs.python.org/3/library/json.html#json.load).
