@@ -67,7 +67,13 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
         self.key_path = [] if key_path is None else key_path[:]
     
     def __iter__(self):
-        return iter(self.value())
+        v = self.value()
+        if isinstance(v, dict):
+            for item in v:
+                yield self[item]
+        else:
+            for i in range(len(v)):
+                yield self[i]
     
     def __len__(self):
         return len(self.value())
