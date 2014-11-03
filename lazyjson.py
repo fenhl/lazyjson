@@ -5,11 +5,11 @@ except ImportError:
     import collections as collectionsabc
 import io
 import json
+import locale
 import os
 import os.path
 import subprocess
 import threading
-import locale
 
 def parse_version_string():
     path = os.path.abspath(__file__)
