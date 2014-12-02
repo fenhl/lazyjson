@@ -252,14 +252,16 @@ class SFTPFile(BaseFile):
         
         with paramiko.Transport((self.hostname, self.port)) as transport:
             transport.connect(**self.connection_args)
-            with transport.open_sftp_client().file(self.remote_path, 'w') as sftp_file:
-                json_string = json.dumps(new_value, sort_keys=True, indent=4, separators=(',', ': '))
-                sftp_file.write(json_string.encode('utf-8') + b'\n')
+            with transport.open_sftp_client() as sftp_client:
+                with sftp_client.file(self.remote_path, 'w') as sftp_file:
+                    json_string = json.dumps(new_value, sort_keys=True, indent=4, separators=(',', ': '))
+                    sftp_file.write(json_string.encode('utf-8') + b'\n')
     
     def value(self):
         import paramiko
         
         with paramiko.Transport((self.hostname, self.port)) as transport:
             transport.connect(**self.connection_args)
-            with transport.open_sftp_client().file(self.remote_path) as sftp_file:
-                return json.loads(sftp_file.read().decode('utf-8'))
+            with transport.open_sftp_client() as sftp_client:
+                with sftp_client.file(self.remote_path) as sftp_file:
+                    return json.loads(sftp_file.read().decode('utf-8'))
