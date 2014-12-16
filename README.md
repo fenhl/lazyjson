@@ -85,6 +85,15 @@ The optional `file_is_open` argument can be used to force appropriate behavior f
 
 Note that constructing a `File` from a file object may result in unexpected behavior, as lazyjson uses `.read` on the file every time a value is accessed, and `.write` every time one is changed. The file object must also support [`str`](https://docs.python.org/3/library/stdtypes.html#str) input for changes to succeed.
 
+HTTPFile
+--------
+
+The `HTTPFile` class uses [requests](http://python-requests.org/) to represent a JSON file accessed via [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol).
+
+The constructor takes the request URL as a required positional-only argument. An optional `post_url` argument may also be given, which will then be used as the URL for POST requests when mutating the file. By default, the same request URL will be used.
+
+Any other keyword arguments will be passed to the request as [parameters](http://docs.python-requests.org/en/latest/api/#requests.request) (except for `json` which will be overwritten for POST requests).
+
 MultiFile
 ---------
 
