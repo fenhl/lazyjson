@@ -102,6 +102,13 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
     def insert(self, key, value):
         self.root.insert_value_at_key_path(self.key_path + [key], value)
     
+    @property
+    def key(self):
+        if len(self.key_path) == 0:
+            return None
+        else:
+            return self.key_path[-1]
+    
     def value(self):
         return self.root.value_at_key_path(self.key_path)
 
