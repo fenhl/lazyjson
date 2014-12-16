@@ -196,6 +196,28 @@ class File(BaseFile):
             with open(self.file_info, **self.open_args) as json_file:
                 return json.load(json_file)
 
+class HTTPFile(BaseFile):
+    def __init__(self, url, post_url=None, **kwargs):
+        super().__init__()
+        self.url = url
+        self.post_url = url if post_url is None else post_url
+        self.request_params = kwargs
+    
+    def __repr__(self):
+        return 'lazyjson.HTTPFile(' + repr(self.url) + ('' if self.post_url == self.url else ', post_url=' + repr(self.post_url)) + ''.join(', {}={}'.format(k, repr(v)) for k, v in self.request_params.items()) + ')'
+    
+    def set(self, new_value):
+        import requests
+        
+        request_params = self.request_params.copy()
+        request_params['json'] = new_value
+        requests.post(self.post_url, **request_params)
+    
+    def value(self):
+        import requests
+        
+        return requests.get(self.url, **self.request_params).json()
+
 class MultiFile(BaseFile):
     def __init__(self, *args):
         super().__init__()
