@@ -178,7 +178,7 @@ class File(BaseFile):
 
     def set(self, new_value):
         if isinstance(new_value, Node):
-            value = value.value()
+            new_value = new_value.value()
         json.dumps(new_value) # try writing the value to a string first to prevent corrupting the file if the value is not JSON serializable
         with self.lock:
             if self.file_is_open:
@@ -209,6 +209,8 @@ class HTTPFile(BaseFile):
     def set(self, new_value):
         import requests
 
+        if isinstance(new_value, Node):
+            new_value = new_value.value()
         request_params = self.request_params.copy()
         request_params['json'] = new_value
         requests.post(self.post_url, **request_params)
@@ -259,6 +261,8 @@ class PythonFile(BaseFile):
         return 'lazyjson.PythonFile(' + repr(self._value) + ')'
 
     def set(self, new_value):
+        if isinstance(new_value, Node):
+            new_value = new_value.value()
         json.dumps(new_value) # try writing the value to a string first to make sure it is JSON serializable
         self._value = new_value
 
@@ -279,6 +283,8 @@ class SFTPFile(BaseFile):
     def set(self, new_value):
         import paramiko
 
+        if isinstance(new_value, Node):
+            new_value = new_value.value()
         with paramiko.Transport((self.hostname, self.port)) as transport:
             transport.connect(**self.connection_args)
             with transport.open_sftp_client() as sftp_client:
