@@ -140,6 +140,7 @@ Some methods to note:
 
 *   `__iter__` takes a snapshot of the keys/indices at the time of being called, and always yields nodes: for object nodes, it behaves similar to the `values` method.
 *   `get` is overridden to always return a native Python object. It returns the value at the specified key, index, or slice if it exists, or the default value provided otherwise.
+*   `set` can be used to directly change the value of this node.
 *   `value` returns the JSON value of the node as a native Python object, similar to [`json.load`](https://docs.python.org/3/library/json.html#json.load).
 
 And the properties:
