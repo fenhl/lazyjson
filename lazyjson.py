@@ -51,22 +51,22 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
         if isinstance(item, Node):
             item = item.value()
         return item in self.value()
-    
+
     def __deepcopy__(self, memodict={}):
         return self.value()
-    
+
     def __delitem__(self, key):
         self.root.delete_value_at_key_path(self.key_path + [key])
-    
+
     def __getitem__(self, key):
         return Node(self.root, self.key_path + [key])
-    
+
     def __init__(self, root, key_path=None):
         if not isinstance(root, BaseFile):
             root = File(root)
         self.root = root
         self.key_path = [] if key_path is None else key_path[:]
-    
+
     def __iter__(self):
         v = self.value()
         if isinstance(v, dict):
@@ -75,21 +75,21 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
         else:
             for i in range(len(v)):
                 yield self[i]
-    
+
     def __len__(self):
         return len(self.value())
-    
+
     def __str__(self):
         return str(self.value())
-    
+
     def __repr__(self):
         return 'lazyjson.Node(' + repr(self.root) + ', ' + repr(self.key_path) + ')'
-    
+
     def __setitem__(self, key, value):
         if isinstance(value, Node):
             value = value.value()
         self.root.set_value_at_key_path(self.key_path + [key], value)
-    
+
     def get(self, key, default=None):
         try:
             return self[key].value()
@@ -98,17 +98,17 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
                 return default.value()
             else:
                 return default
-    
+
     def insert(self, key, value):
         self.root.insert_value_at_key_path(self.key_path + [key], value)
-    
+
     @property
     def key(self):
         if len(self.key_path) == 0:
             return None
         else:
             return self.key_path[-1]
-    
+
     def value(self):
         return self.root.value_at_key_path(self.key_path)
 
@@ -116,7 +116,7 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
     """ABC for lazyjson files (root values)."""
     def __init__(self):
         super().__init__(self)
-    
+
     def delete_value_at_key_path(self, key_path):
         json_value = self.value()
         item = json_value
@@ -127,7 +127,7 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
                 item = item[key]
             del item[key_path[-1]]
         self.set(json_value)
-    
+
     def insert_value_at_key_path(self, key_path, value):
         json_value = self.value()
         item = json_value
@@ -138,11 +138,11 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
                 item = item[key]
             item.insert(key_path[-1], value)
         self.set(json_value)
-    
+
     @abc.abstractmethod
     def set(self, new_value):
         pass
-    
+
     def set_value_at_key_path(self, key_path, new_value):
         json_value = self.value()
         item = json_value
@@ -153,11 +153,11 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
                 item = item[key]
             item[key_path[-1]] = new_value
         self.set(json_value)
-    
+
     @abc.abstractmethod
     def value(self, new_value):
         pass
-    
+
     def value_at_key_path(self, key_path):
         ret = self.value()
         for key in key_path:
@@ -172,10 +172,10 @@ class File(BaseFile):
         self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else bool(file_is_open)
         self.file_info = file_info
         self.lock = threading.Lock()
-    
+
     def __repr__(self):
         return 'lazyjson.File(' + repr(self.file_info) + ('' if self.file_is_open and isinstance(self.file_info, io.IOBase) or (not self.file_is_open) and not isinstance(self.file_info, io.IOBase) else ', file_is_open=' + repr(self.file_is_open)) + ')'
-    
+
     def set(self, new_value):
         if isinstance(new_value, Node):
             value = value.value()
@@ -188,7 +188,7 @@ class File(BaseFile):
                 with open(self.file_info, 'w', **self.open_args) as json_file:
                     json.dump(new_value, json_file, sort_keys=True, indent=4, separators=(',', ': '))
                     print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
-    
+
     def value(self):
         if self.file_is_open:
             return json.load(self.file_info)
@@ -202,30 +202,30 @@ class HTTPFile(BaseFile):
         self.url = url
         self.post_url = url if post_url is None else post_url
         self.request_params = kwargs
-    
+
     def __repr__(self):
         return 'lazyjson.HTTPFile(' + repr(self.url) + ('' if self.post_url == self.url else ', post_url=' + repr(self.post_url)) + ''.join(', {}={}'.format(k, repr(v)) for k, v in self.request_params.items()) + ')'
-    
+
     def set(self, new_value):
         import requests
-        
+
         request_params = self.request_params.copy()
         request_params['json'] = new_value
         requests.post(self.post_url, **request_params)
-    
+
     def value(self):
         import requests
-        
+
         return requests.get(self.url, **self.request_params).json()
 
 class MultiFile(BaseFile):
     def __init__(self, *args):
         super().__init__()
         self.files = [arg if isinstance(arg, BaseFile) else File(arg) for arg in args]
-    
+
     def __repr__(self):
         return 'lazyjson.MultiFile(' + ', '.join(repr(f) for f in self.files) + ')'
-    
+
     @staticmethod
     def json_recursive_merge(json_values):
         try:
@@ -242,10 +242,10 @@ class MultiFile(BaseFile):
             return {k: MultiFile.json_recursive_merge(value[k] for value in objects_prefix if isinstance(value, dict) and k in value) for k in set.union(*(set(d.keys()) for d in objects_prefix))}
         else:
             return first
-    
+
     def set(self, new_value):
         self.files[0].set(new_value)
-    
+
     def value(self):
         return self.json_recursive_merge(f.value() for f in self.files)
 
@@ -254,14 +254,14 @@ class PythonFile(BaseFile):
     def __init__(self, value=None):
         super().__init__()
         self._value = value
-    
+
     def __repr__(self):
         return 'lazyjson.PythonFile(' + repr(self._value) + ')'
-    
+
     def set(self, new_value):
         json.dumps(new_value) # try writing the value to a string first to make sure it is JSON serializable
         self._value = new_value
-    
+
     def value(self):
         return self._value
 
@@ -272,23 +272,23 @@ class SFTPFile(BaseFile):
         self.port = port
         self.remote_path = path
         self.connection_args = kwargs
-    
+
     def __repr__(self):
         return 'lazyjson.SFTPFile(' + repr(self.hostname) + ', ' + repr(self.port) + ', ' + repr(self.remote_path) + ''.join(', {}={}'.format(k, repr(v)) for k, v in self.connection_args.items()) + ')'
-    
+
     def set(self, new_value):
         import paramiko
-        
+
         with paramiko.Transport((self.hostname, self.port)) as transport:
             transport.connect(**self.connection_args)
             with transport.open_sftp_client() as sftp_client:
                 with sftp_client.file(self.remote_path, 'w') as sftp_file:
                     json_string = json.dumps(new_value, sort_keys=True, indent=4, separators=(',', ': '))
                     sftp_file.write(json_string.encode('utf-8') + b'\n')
-    
+
     def value(self):
         import paramiko
-        
+
         with paramiko.Transport((self.hostname, self.port)) as transport:
             transport.connect(**self.connection_args)
             with transport.open_sftp_client() as sftp_client:
