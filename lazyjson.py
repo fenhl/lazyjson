@@ -112,7 +112,7 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
     def set(self, new_value):
         if isinstance(new_value, Node):
             new_value = new_value.value()
-        self.root.set_value_at_key_path(self.key_path, value)
+        self.root.set_value_at_key_path(self.key_path, new_value)
 
     def value(self):
         return self.root.value_at_key_path(self.key_path)
