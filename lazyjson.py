@@ -113,6 +113,8 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
     def parent(self):
         if len(self.key_path) == 0:
             return None
+        elif len(self.key_path) == 1:
+            return self.root
         else:
             return Node(self.root, self.key_path[:-1])
 
