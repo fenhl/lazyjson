@@ -1,6 +1,6 @@
 **lazyjson** is a module for Python 3.2 or higher that provides lazy JSON I/O.
 
-This is `lazyjson` version 2.4.1 ([semver](http://semver.org/)). The versioned API is described below, in the section *API*.
+This is `lazyjson` version 2.5.0 ([semver](http://semver.org/)). The versioned API is described below, in the section *API*.
 
 Usage
 =====
@@ -147,3 +147,5 @@ And the properties:
 
 *   `key` returns the last element in the `key_path` (see below), or `None` for the root node.
 *   `key_path` returns a list of keys (strings, integers, or slices) which lead from the root node to this node. For example, in `{"one": "eins", "two": ["dos", "deux"]}`, the `"dos"` would have a key path of `["two", 0]`. The root node's key path is `[]`.
+*   `parent` returns the parent node, or `None` for the root node.
+*   `root` returns the root node of this file.
