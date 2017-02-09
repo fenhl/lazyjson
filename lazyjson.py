@@ -109,6 +109,13 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
         else:
             return self.key_path[-1]
 
+    @property
+    def parent(self):
+        if len(self.key_path) == 0:
+            return None
+        else:
+            return Node(self.root, self.key_path[:-1])
+
     def set(self, new_value):
         if isinstance(new_value, Node):
             new_value = new_value.value()
