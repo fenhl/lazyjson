@@ -66,7 +66,7 @@ BaseFile
 It has 2 abstract methods:
 
 *   `set`: write the JSON value passed as argument to the file.
-*   `value`: read the JSON value from the file.
+*   `value`: read and return the JSON value from the file.
 
 Both methods should handle native Python objects, as used in the [`json`](docs.python.org/3/library/json.html) module.
 
