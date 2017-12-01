@@ -58,6 +58,9 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
     def __delitem__(self, key):
         self.root.delete_value_at_key_path(self.key_path + [key])
 
+    def __format__(self, format_spec):
+        return format(self.value(), format_spec)
+
     def __getitem__(self, key):
         return Node(self.root, self.key_path + [key])
 
