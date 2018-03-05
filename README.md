@@ -1,6 +1,6 @@
 **lazyjson** is a module for Python 3.2 or higher that provides lazy JSON I/O.
 
-This is `lazyjson` version 2.5.1 ([semver](http://semver.org/)). The versioned API is described below, in the section *API*.
+This is `lazyjson` version 2.6.0 ([semver](http://semver.org/)). The versioned API is described below, in the section *API*.
 
 Usage
 =====
@@ -81,7 +81,11 @@ When instantiating a `File`, the first constructor argument must be one of the f
 *   an open [file object](https://docs.python.org/3/glossary.html#term-file-object),
 *   or an [instance](http://docs.python.org/3/library/functions.html#isinstance) of [`pathlib.Path`](http://docs.python.org/3/library/pathlib.html#pathlib.Path).
 
-The optional `file_is_open` argument can be used to force appropriate behavior for a file that is already open, or one that will be opened on each read or write access. By default, behavior depends on whether the file argument inherits from `io.IOBase`. Any other keyword arguments, such as `encoding`, will be passed to the `open` calls.
+The optional `file_is_open` argument can be used to force appropriate behavior for a file that is already open, or one that will be opened on each read or write access. By default, behavior depends on whether the file argument inherits from `io.IOBase`.
+
+If the optional `init` argument is given and the file does not exist, it will be created and the argument is encoded and written to the file. For an open file object, this parameter is ignored.
+
+Any other keyword arguments, such as `encoding`, will be passed to the `open` calls.
 
 Note that constructing a `File` from a file object may result in unexpected behavior, as lazyjson uses `.read` on the file every time a value is accessed, and `.write` every time one is changed. The file object must also support [`str`](https://docs.python.org/3/library/stdtypes.html#str) input for changes to succeed.
 

@@ -183,12 +183,16 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
 
 class File(BaseFile):
     """A file based on a file-like object, a pathlib.Path, or anything that can be opened."""
-    def __init__(self, file_info, file_is_open=None, **kwargs):
+    def __init__(self, file_info, file_is_open=None, init=..., **kwargs):
         super().__init__()
         self.open_args = dict(kwargs)
         self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else bool(file_is_open)
         self.file_info = file_info
         self.lock = threading.Lock()
+        if init != ... and not self.file_is_open and not pathlib.Path(self.file_info).exists():
+            with open(self.file_info, 'w', **self.open_args) as json_file:
+                json.dump(init, json_file, sort_keys=True, indent=4, separators=(',', ': '))
+                print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
 
     def __repr__(self):
         return 'lazyjson.File(' + repr(self.file_info) + ('' if self.file_is_open and isinstance(self.file_info, io.IOBase) or (not self.file_is_open) and not isinstance(self.file_info, io.IOBase) else ', file_is_open=' + repr(self.file_is_open)) + ')'
