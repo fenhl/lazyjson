@@ -3,6 +3,7 @@ try:
     import collections.abc as collectionsabc
 except ImportError:
     import collections as collectionsabc
+import decimal
 import io
 import json
 import locale
@@ -45,6 +46,12 @@ else:
             return file.open(mode=mode, buffering=buffering, encoding=encoding, errors=errors, newline=newline)
         else:
             return builtins.open(file, mode=mode, buffering=buffering, encoding=encoding, errors=errors, newline=newline, closefd=closefd, opener=opener)
+
+class DecimalEncoder(json.JSONEncoder): #FROM http://stackoverflow.com/a/3885198/667338
+    def default(self, o):
+        if isinstance(o, decimal.Decimal):
+            return float(o) # do not use str as that would enclose the value in quotes
+        return super().default(o)
 
 class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
     def __contains__(self, item):
@@ -191,7 +198,7 @@ class File(BaseFile):
         self.lock = threading.Lock()
         if init != ... and not self.file_is_open and not pathlib.Path(self.file_info).exists():
             with open(self.file_info, 'w', **self.open_args) as json_file:
-                json.dump(init, json_file, sort_keys=True, indent=4, separators=(',', ': '))
+                json.dump(init, json_file, sort_keys=True, indent=4, separators=(',', ': '), cls=DecimalEncoder)
                 print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
 
     def __repr__(self):
@@ -200,22 +207,22 @@ class File(BaseFile):
     def set(self, new_value):
         if isinstance(new_value, Node):
             new_value = new_value.value()
-        json.dumps(new_value) # try writing the value to a string first to prevent corrupting the file if the value is not JSON serializable
+        json.dumps(new_value, cls=DecimalEncoder) # try writing the value to a string first to prevent corrupting the file if the value is not JSON serializable
         with self.lock:
             if self.file_is_open:
-                json.dump(new_value, self.file_info, sort_keys=True, indent=4, separators=(',', ': '))
+                json.dump(new_value, self.file_info, sort_keys=True, indent=4, separators=(',', ': '), cls=DecimalEncoder)
                 print(file=self.file_info) # json.dump doesn't end the file in a newline, so add it manually
             else:
                 with open(self.file_info, 'w', **self.open_args) as json_file:
-                    json.dump(new_value, json_file, sort_keys=True, indent=4, separators=(',', ': '))
+                    json.dump(new_value, json_file, sort_keys=True, indent=4, separators=(',', ': '), cls=DecimalEncoder)
                     print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
 
     def value(self):
         if self.file_is_open:
-            return json.load(self.file_info)
+            return json.load(self.file_info, parse_float=decimal.Decimal)
         else:
             with open(self.file_info, **self.open_args) as json_file:
-                return json.load(json_file)
+                return json.load(json_file, parse_float=decimal.Decimal)
 
 class HTTPFile(BaseFile):
     def __init__(self, url, post_url=None, **kwargs):
@@ -284,7 +291,7 @@ class PythonFile(BaseFile):
     def set(self, new_value):
         if isinstance(new_value, Node):
             new_value = new_value.value()
-        json.dumps(new_value) # try writing the value to a string first to make sure it is JSON serializable
+        json.dumps(new_value, cls=DecimalEncoder) # try writing the value to a string first to make sure it is JSON serializable
         self._value = new_value
 
     def value(self):
@@ -310,7 +317,7 @@ class SFTPFile(BaseFile):
             transport.connect(**self.connection_args)
             with transport.open_sftp_client() as sftp_client:
                 with sftp_client.file(self.remote_path, 'w') as sftp_file:
-                    json_string = json.dumps(new_value, sort_keys=True, indent=4, separators=(',', ': '))
+                    json_string = json.dumps(new_value, sort_keys=True, indent=4, separators=(',', ': '), cls=DecimalEncoder)
                     sftp_file.write(json_string.encode('utf-8') + b'\n')
 
     def value(self):
@@ -320,4 +327,4 @@ class SFTPFile(BaseFile):
             transport.connect(**self.connection_args)
             with transport.open_sftp_client() as sftp_client:
                 with sftp_client.file(self.remote_path) as sftp_file:
-                    return json.loads(sftp_file.read().decode('utf-8'))
+                    return json.loads(sftp_file.read().decode('utf-8'), parse_float=decimal.Decimal)
