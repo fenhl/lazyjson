@@ -11,6 +11,7 @@ import os
 import os.path
 import subprocess
 import threading
+import time
 
 def parse_version_string():
     path = os.path.abspath(__file__)
@@ -190,10 +191,11 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
 
 class File(BaseFile):
     """A file based on a file-like object, a pathlib.Path, or anything that can be opened."""
-    def __init__(self, file_info, file_is_open=None, init=..., **kwargs):
+    def __init__(self, file_info, file_is_open=None, tries=10, init=..., **kwargs):
         super().__init__()
         self.open_args = dict(kwargs)
         self.file_is_open = isinstance(file_info, io.IOBase) if file_is_open is None else bool(file_is_open)
+        self.tries = tries
         self.file_info = file_info
         self.lock = threading.Lock()
         if init != ... and not self.file_is_open and not pathlib.Path(self.file_info).exists():
@@ -221,8 +223,17 @@ class File(BaseFile):
         if self.file_is_open:
             return json.load(self.file_info, parse_float=decimal.Decimal)
         else:
-            with open(self.file_info, **self.open_args) as json_file:
-                return json.load(json_file, parse_float=decimal.Decimal)
+            tried = 0
+            while True:
+                try:
+                    with open(self.file_info, **self.open_args) as json_file:
+                        return json.load(json_file, parse_float=decimal.Decimal)
+                except json.decoder.JSONDecodeError:
+                    tried += 1
+                    if tried >= self.tries:
+                        raise
+                    else:
+                        time.sleep(1)
 
 class HTTPFile(BaseFile):
     def __init__(self, url, post_url=None, **kwargs):

@@ -83,6 +83,8 @@ When instantiating a `File`, the first constructor argument must be one of the f
 
 The optional `file_is_open` argument can be used to force appropriate behavior for a file that is already open, or one that will be opened on each read or write access. By default, behavior depends on whether the file argument inherits from `io.IOBase`.
 
+If a `json.decoder.JSONDecodeError` is encountered while reading the file and the `File` isn't in `file_is_open` mode, another attempt is made after 1 second. This avoids intermittent errors when the file is accessed while also in the middle of being written to disk. The optional `tries` argument specifies how many read attempts should be made before reraising the `JSONDecodeError`. The default value for this is `10`.
+
 If the optional `init` argument is given and the file does not exist, it will be created and the argument is encoded and written to the file. For an open file object, this parameter is ignored.
 
 Any other keyword arguments, such as `encoding`, will be passed to the `open` calls.
