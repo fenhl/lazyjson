@@ -1,6 +1,6 @@
 **lazyjson** is a module for Python 3.2 or higher that provides lazy JSON I/O.
 
-This is `lazyjson` version 2.6.2 ([semver](http://semver.org/)). The versioned API is described below, in the section *API*.
+This is `lazyjson` version 2.7.0 ([semver](http://semver.org/)). The versioned API is described below, in the section *API*.
 
 Usage
 =====
