@@ -53,7 +53,7 @@ The result has magically changed, because the file is actually read each time yo
 
 # API
 
-Lazyjson 2 provides the `BaseFile` ABC and the concrete subclasses `File`, `HTTPFile`, `MultiFile`, `PythonFile`, and `SFTPFile`.
+Lazyjson 2 provides the `BaseFile` ABC and the concrete subclasses `File`, `CachedFile`, `HTTPFile`, `MultiFile`, `PythonFile`, and `SFTPFile`.
 
 ## BaseFile
 
