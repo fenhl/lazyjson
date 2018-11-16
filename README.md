@@ -94,9 +94,9 @@ Note that constructing a `File` from a file object may result in unexpected beha
 CachedFile
 ----------
 
-The `CachedFile` class takes a mutable mapping `cache` another `File`. Any access of the value will be retrieved from the cache if present, otherwise the inner `File`'s value is stored in the cache.
+The `CachedFile` class takes a mutable mapping `cache` and another `BaseFile`. Any access of the `CachedFile`'s value will be retrieved from the cache if present, otherwise the inner `BaseFile`'s value is stored in the cache and returned.
 
-This class performs *no* cache invalidation whatsoever except when the value is modified.
+This class performs *no* cache invalidation whatsoever except when the `CachedFile`'s value is modified.
 
 HTTPFile
 --------
