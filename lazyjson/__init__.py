@@ -55,6 +55,12 @@ class DecimalEncoder(json.JSONEncoder): #FROM http://stackoverflow.com/a/3885198
         return super().default(o)
 
 class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
+    def __init__(self, root, key_path=None):
+        if not isinstance(root, BaseFile):
+            root = File(root)
+        self.root = root
+        self.key_path = [] if key_path is None else key_path[:]
+
     def __contains__(self, item):
         if isinstance(item, Node):
             item = item.value()
@@ -66,17 +72,17 @@ class Node(collectionsabc.MutableMapping, collectionsabc.MutableSequence):
     def __delitem__(self, key):
         self.root.delete_value_at_key_path(self.key_path + [key])
 
+    def __eq__(self, other):
+        return self.root == other.root and self.key_path == other.key_path
+
     def __format__(self, format_spec):
         return format(self.value(), format_spec)
 
     def __getitem__(self, key):
         return Node(self.root, self.key_path + [key])
 
-    def __init__(self, root, key_path=None):
-        if not isinstance(root, BaseFile):
-            root = File(root)
-        self.root = root
-        self.key_path = [] if key_path is None else key_path[:]
+    def __hash__(self):
+        return hash((self.root, self.key_path))
 
     def __iter__(self):
         v = self.value()
@@ -142,6 +148,14 @@ class BaseFile(Node, metaclass=abc.ABCMeta):
     def __init__(self):
         super().__init__(self)
 
+    @abc.abstractmethod
+    def __eq__(self, other):
+        raise NotImplementedError()
+
+    @abc.abstractmethod
+    def __hash__(self):
+        raise NotImplementedError()
+
     def delete_value_at_key_path(self, key_path):
         json_value = self.value()
         item = json_value
@@ -203,8 +217,14 @@ class File(BaseFile):
                 json.dump(init, json_file, sort_keys=True, indent=4, separators=(',', ': '), cls=DecimalEncoder)
                 print(file=json_file) # json.dump doesn't end the file in a newline, so add it manually
 
+    def __eq__(self, other):
+        return self.file_info == other.file_info
+
+    def __hash__(self):
+        return hash(self.file_info)
+
     def __repr__(self):
-        return 'lazyjson.File(' + repr(self.file_info) + ('' if self.file_is_open and isinstance(self.file_info, io.IOBase) or (not self.file_is_open) and not isinstance(self.file_info, io.IOBase) else ', file_is_open=' + repr(self.file_is_open)) + ')'
+        return 'lazyjson.File(' + repr(self.file_info) + ('' if self.file_is_open and isinstance(self.file_info, io.IOBase) or (not self.file_is_open) and not isinstance(self.file_info, io.IOBase) else ', file_is_open=' + repr(self.file_is_open)) + ('' if self.tries == 10 else ', tries=' + repr(self.tries)) + (', **' + repr(self.open_args) if self.open_args else '') + ')'
 
     def set(self, new_value):
         if isinstance(new_value, Node):
@@ -235,12 +255,46 @@ class File(BaseFile):
                     else:
                         time.sleep(1)
 
+class CachedFile(BaseFile):
+    """A file that wraps an inner file. The contents of the inner file are cached in a user-provided cache, which must be a mutable mapping.
+    Cache invalidation must be handled externally, for example by storing the cache inside flask.g when working with the Flask framework.
+    """
+    def __init__(self, cache, inner):
+        super().__init__()
+        self.cache = cache
+        self.inner = inner
+
+    def __eq__(self, other):
+        return self.inner == other.inner
+
+    def __hash__(self):
+        return hash(self.inner)
+
+    def __repr__(self):
+        return 'lazyjson.CachedFile(' + repr(self.cache) + ', ' + repr(self.inner) + ')'
+
+    def set(self, new_value):
+        if self.inner in self.cache:
+            del self.cache[self.inner]
+        self.inner.set(new_value)
+
+    def value(self):
+        if self.inner not in self.cache:
+            self.cache[self.inner] = self.inner.value()
+        return self.cache[self.inner]
+
 class HTTPFile(BaseFile):
     def __init__(self, url, post_url=None, **kwargs):
         super().__init__()
         self.url = url
         self.post_url = url if post_url is None else post_url
         self.request_params = kwargs
+
+    def __eq__(self, other):
+        return self.url == other.url and self.post_url == other.post_url
+
+    def __hash__(self):
+        return hash((self.url, self.post_url))
 
     def __repr__(self):
         return 'lazyjson.HTTPFile(' + repr(self.url) + ('' if self.post_url == self.url else ', post_url=' + repr(self.post_url)) + ''.join(', {}={}'.format(k, repr(v)) for k, v in self.request_params.items()) + ')'
@@ -263,6 +317,12 @@ class MultiFile(BaseFile):
     def __init__(self, *args):
         super().__init__()
         self.files = [arg if isinstance(arg, BaseFile) else File(arg) for arg in args]
+
+    def __eq__(self, other):
+        return self.files == other.files
+
+    def __hash__(self):
+        return hash(self.files)
 
     def __repr__(self):
         return 'lazyjson.MultiFile(' + ', '.join(repr(f) for f in self.files) + ')'
@@ -296,6 +356,12 @@ class PythonFile(BaseFile):
         super().__init__()
         self._value = value
 
+    def __eq__(self, other):
+        return self._value == other._value
+
+    def __hash__(self):
+        return hash(self._value)
+
     def __repr__(self):
         return 'lazyjson.PythonFile(' + repr(self._value) + ')'
 
@@ -315,6 +381,12 @@ class SFTPFile(BaseFile):
         self.port = port
         self.remote_path = path
         self.connection_args = kwargs
+
+    def __eq__(self, other):
+        return self.hostname == other.hostname and self.port == other.port and self.remote_path == other.remote_path
+
+    def __hash__(self):
+        return hash((self.hostname, self.port, self.remote_path))
 
     def __repr__(self):
         return 'lazyjson.SFTPFile(' + repr(self.hostname) + ', ' + repr(self.port) + ', ' + repr(self.remote_path) + ''.join(', {}={}'.format(k, repr(v)) for k, v in self.connection_args.items()) + ')'
