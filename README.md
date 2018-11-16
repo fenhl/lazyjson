@@ -1,6 +1,6 @@
 **lazyjson** is a module for Python 3.2 or higher that provides lazy JSON I/O.
 
-This is `lazyjson` version 2.7.0 ([semver](http://semver.org/)). The versioned API is described below, in the section *API*.
+This is `lazyjson` version 2.8.0 ([semver](http://semver.org/)). The versioned API is described below, in the section *API*.
 
 Usage
 =====
@@ -90,6 +90,13 @@ If the optional `init` argument is given and the file does not exist, it will be
 Any other keyword arguments, such as `encoding`, will be passed to the `open` calls.
 
 Note that constructing a `File` from a file object may result in unexpected behavior, as lazyjson uses `.read` on the file every time a value is accessed, and `.write` every time one is changed. The file object must also support [`str`](https://docs.python.org/3/library/stdtypes.html#str) input for changes to succeed.
+
+CachedFile
+----------
+
+The `CachedFile` class takes a mutable mapping `cache` another `File`. Any access of the value will be retrieved from the cache if present, otherwise the inner `File`'s value is stored in the cache.
+
+This class performs *no* cache invalidation whatsoever except when the value is modified.
 
 HTTPFile
 --------
