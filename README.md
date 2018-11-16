@@ -1,9 +1,8 @@
 **lazyjson** is a module for Python 3.2 or higher that provides lazy JSON I/O.
 
-This is `lazyjson` version 2.8.0 ([semver](http://semver.org/)). The versioned API is described below, in the section *API*.
+This is `lazyjson` version 2.8.0 ([semver](https://semver.org/)). The versioned API is described below, in the section *API*.
 
-Usage
-=====
+# Usage
 
 First you need a lazyjson object, which can represent a JSON formatted file on the file system:
 
@@ -15,9 +14,8 @@ First you need a lazyjson object, which can represent a JSON formatted file on t
 or even a remote file:
 
 ```python
->>> import lazyjson, paramiko.util, os.path
->>> host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
->>> f = lazyjson.SFTPFile('example.com', 22, '/foo/bar/example-file.json', username='me', pkey=paramiko.RSAKey.from_private_key_file(os.path.expanduser('~/.ssh/id_rsa')), hostkey=host_keys['example.com'][host_keys['example.com'].keys()[0]])
+>>> import lazyjson
+>>> f = lazyjson.SFTPFile('example.com', 22, '/foo/bar/example-file.json', username='me')
 ```
 
 You can then use the `File` object like a regular `dict`:
@@ -53,33 +51,32 @@ The result has magically changed, because the file is actually read each time yo
 }
 ```
 
-API
-===
+# API
 
 Lazyjson 2 provides the `BaseFile` ABC and the concrete subclasses `File`, `HTTPFile`, `MultiFile`, `PythonFile`, and `SFTPFile`.
 
-BaseFile
---------
+## BaseFile
 
 `BaseFile` inherits from `Node`, and represents its own root node (see below).
 
-It has 2 abstract methods:
+It has 4 abstract methods:
 
-*   `set`: write the JSON value passed as argument to the file.
-*   `value`: read and return the JSON value from the file.
+* `__eq__`
+* `__hash__`
+* `set`: write the JSON value passed as argument to the file.
+* `value`: read and return the JSON value from the file.
 
 Both methods should handle native Python objects, as used in the [`json`](docs.python.org/3/library/json.html) module.
 
 It also has an `__init__` method that takes no arguments and must be called from subclasses' `__init__`.
 
-File
-----
+## File
 
 When instantiating a `File`, the first constructor argument must be one of the following:
 
-*   a valid single argument to the built-in function [`open`](http://docs.python.org/3/library/functions.html#open),
-*   an open [file object](https://docs.python.org/3/glossary.html#term-file-object),
-*   or an [instance](http://docs.python.org/3/library/functions.html#isinstance) of [`pathlib.Path`](http://docs.python.org/3/library/pathlib.html#pathlib.Path).
+* a valid single argument to the built-in function [`open`](https://docs.python.org/3/library/functions.html#open),
+* an open [file object](https://docs.python.org/3/glossary.html#term-file-object),
+* or an [instance](https://docs.python.org/3/library/functions.html#isinstance) of [`pathlib.Path`](https://docs.python.org/3/library/pathlib.html#pathlib.Path).
 
 The optional `file_is_open` argument can be used to force appropriate behavior for a file that is already open, or one that will be opened on each read or write access. By default, behavior depends on whether the file argument inherits from `io.IOBase`.
 
@@ -91,15 +88,13 @@ Any other keyword arguments, such as `encoding`, will be passed to the `open` ca
 
 Note that constructing a `File` from a file object may result in unexpected behavior, as lazyjson uses `.read` on the file every time a value is accessed, and `.write` every time one is changed. The file object must also support [`str`](https://docs.python.org/3/library/stdtypes.html#str) input for changes to succeed.
 
-CachedFile
-----------
+## CachedFile
 
 The `CachedFile` class takes a mutable mapping `cache` and another `BaseFile`. Any access of the `CachedFile`'s value will be retrieved from the cache if present, otherwise the inner `BaseFile`'s value is stored in the cache and returned.
 
 This class performs *no* cache invalidation whatsoever except when the `CachedFile`'s value is modified.
 
-HTTPFile
---------
+## HTTPFile
 
 The `HTTPFile` class uses [requests](http://python-requests.org/) to represent a JSON file accessed via [HTTP](https://en.wikipedia.org/wiki/Hypertext_Transfer_Protocol).
 
@@ -107,8 +102,7 @@ The constructor takes the request URL as a required positional-only argument. An
 
 Any other keyword arguments will be passed to the request as [parameters](http://docs.python-requests.org/en/latest/api/#requests.request) (except for `json` which will be overwritten for POST requests).
 
-MultiFile
----------
+## MultiFile
 
 A `MultiFile` represents a stack of JSON files, with values higher up on the stack extending or overwriting those below them.
 
@@ -120,28 +114,27 @@ When writing to a `MultiFile`, only the topmost file is ever modified. It will b
 
 **Note:** the exact writing behavior of `MultiFile` is undefined and may change at any point without requiring a major release.
 
-PythonFile
-----------
+## PythonFile
 
 This class makes a lazyjson file out of a native Python object, as defined by the `json` module. It can be used in a `MultiFile` to provide a fallback value.
 
-SFTPFile
---------
+## SFTPFile
 
 The `SFTPFile` class uses [paramiko](https://github.com/paramiko/paramiko) to represent a JSON file accessed via [SFTP](https://en.wikipedia.org/wiki/SSH_File_Transfer_Protocol).
 
 The constructor takes the following required positional-only arguments:
 
-*   the hostname
-*   the port (usually 22)
-*   the remote path/filename
+* the hostname
+* the port (usually 22)
+* the remote path/filename
 
-Any keyword arguments are passed to [`connect`](http://docs.paramiko.org/en/1.15/api/transport.html#paramiko.transport.Transport.connect) on the [`paramiko.Transport`](http://docs.paramiko.org/en/1.15/api/transport.html#paramiko.transport.Transport) object.
+Any keyword arguments are passed to [`connect`](https://docs.paramiko.org/en/1.15/api/transport.html#paramiko.transport.Transport.connect) on the [`paramiko.Transport`](https://docs.paramiko.org/en/1.15/api/transport.html#paramiko.transport.Transport) object.
+
+If not passed to the constructor, the keyword argument `pkey` is initialized from the file `~/.ssh/id_rsa`, and `hostkey` from `~/.ssh/known_hosts`.
 
 The file is fetched from the SFTP connection on each read, no caching is performed.
 
-Node
-----
+## Node
 
 A node represents a JSON value, such as an entire file (the root node), or a value inside an array inside an object inside the root node.
 
@@ -151,14 +144,14 @@ Under the hood, the `Node` object only holds a reference to its file (`BaseFile`
 
 Some methods to note:
 
-*   `__iter__` takes a snapshot of the keys/indices at the time of being called, and always yields nodes: for object nodes, it behaves similar to the `values` method.
-*   `get` is overridden to always return a native Python object. It returns the value at the specified key, index, or slice if it exists, or the default value provided otherwise.
-*   `set` can be used to directly change the value of this node.
-*   `value` returns the JSON value of the node as a native Python object, similar to [`json.load`](https://docs.python.org/3/library/json.html#json.load).
+* `__iter__` takes a snapshot of the keys/indices at the time of being called, and always yields nodes: for object nodes, it behaves similar to the `values` method.
+* `get` is overridden to always return a native Python object. It returns the value at the specified key, index, or slice if it exists, or the default value provided otherwise.
+* `set` can be used to directly change the value of this node.
+* `value` returns the JSON value of the node as a native Python object, similar to [`json.load`](https://docs.python.org/3/library/json.html#json.load).
 
 And the properties:
 
-*   `key` returns the last element in the `key_path` (see below), or `None` for the root node.
-*   `key_path` returns a list of keys (strings, integers, or slices) which lead from the root node to this node. For example, in `{"one": "eins", "two": ["dos", "deux"]}`, the `"dos"` would have a key path of `["two", 0]`. The root node's key path is `[]`.
-*   `parent` returns the parent node, or `None` for the root node.
-*   `root` returns the root node of this file.
+* `key` returns the last element in the `key_path` (see below), or `None` for the root node.
+* `key_path` returns a list of keys (strings, integers, or slices) which lead from the root node to this node. For example, in `{"one": "eins", "two": ["dos", "deux"]}`, the `"dos"` would have a key path of `["two", 0]`. The root node's key path is `[]`.
+* `parent` returns the parent node, or `None` for the root node.
+* `root` returns the root node of this file.

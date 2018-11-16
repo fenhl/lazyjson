@@ -376,11 +376,19 @@ class PythonFile(BaseFile):
 
 class SFTPFile(BaseFile):
     def __init__(self, host, port, path, **kwargs):
+        import paramiko
+        import paramiko.util
+
         super().__init__()
         self.hostname = host
         self.port = port
         self.remote_path = path
-        self.connection_args = kwargs
+        self.connection_args = kwargs.copy()
+        if 'pkey' not in self.connection_args:
+            self.connection_args['pkey'] = paramiko.RSAKey.from_private_key_file(os.path.expanduser('~/.ssh/id_rsa'))
+        if 'hostkey': not in self.connection_args:
+            host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
+            self.connection_args['hostkey'] = host_keys[self.hostname][host_keys[self.hostname].keys()[0]])
 
     def __eq__(self, other):
         return self.hostname == other.hostname and self.port == other.port and self.remote_path == other.remote_path
