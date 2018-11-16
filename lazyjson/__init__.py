@@ -386,7 +386,7 @@ class SFTPFile(BaseFile):
         self.connection_args = kwargs.copy()
         if 'pkey' not in self.connection_args:
             self.connection_args['pkey'] = paramiko.RSAKey.from_private_key_file(os.path.expanduser('~/.ssh/id_rsa'))
-        if 'hostkey': not in self.connection_args:
+        if 'hostkey' not in self.connection_args:
             host_keys = paramiko.util.load_host_keys(os.path.expanduser('~/.ssh/known_hosts'))
             self.connection_args['hostkey'] = host_keys[self.hostname][host_keys[self.hostname].keys()[0]])
 
